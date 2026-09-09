@@ -214,7 +214,9 @@ class GetMap:
         # Prepare the data as if we are going to render it, but instead grab the min and max
         # values from the data to represent the range of values in the given area
         filtered_das = (
-            das if entire_layer else self.render(ds, das, None, minmax_only=True)
+            [ds.gridded.mask(da) for da in das]
+            if entire_layer
+            else self.render(ds, das, None, minmax_only=True)
         )
         if isinstance(filtered_das, bool):
             # render method returned False because the filtered DataArray was empty

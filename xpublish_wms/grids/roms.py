@@ -60,7 +60,8 @@ class ROMSGrid(Grid):
         if mask is None:
             return da
 
-        return da.where(mask == 1)
+        # deal with float error found in older roms datasets
+        return da.where(mask > 0.99)
 
     def project(
         self,
@@ -208,7 +209,8 @@ class ROMSGrid(Grid):
         mask = self.grid_mask(x.name.split("_")[-1])
         known = None
         if mask is not None and mask.shape == x.shape:
-            known = np.asarray(mask.values) == 1
+            # deal with float error found in older roms datasets
+            known = np.asarray(mask.values) > 0.99
 
         lng = np.asarray(x.values)
         lat = np.asarray(y.values)
@@ -233,12 +235,15 @@ class ROMSGrid(Grid):
 
         inside = hits if known is None else hits & known
 
-        if not inside.any():
+        # commenting this out since it can cause improperly masked tiles to be drawn outside the grid
+
+        # if not inside.any():
             # A bbox smaller than a grid cell can sit entirely between the corners of a single cell.
             # I have a working approach for dealing with this edge case, but it adds a lot of complexity for a case we
             # are extremely unlikely to ever actually see
             # this also catches tiles that are completely outside the grid, which is a more common case
-            raise Exception("No fully visible cells in bbox (skipping)")
+            # raise Exception("No fully visible cells in bbox (skipping)")
+
 
         # Take a contiguous window around the visible cells rather than the
         # individual indices: dropping interior rows/columns would stitch cells
@@ -286,7 +291,7 @@ class ROMSGrid(Grid):
                 # dimensions
                 mask = mask.cf.squeeze(drop=True).copy(deep=True)
 
-            subset[parameter] = subset[parameter].where(mask == 1)
+            subset[parameter] = subset[parameter].where(mask > 0.99)
 
             # copy unique dims from each parameter
             for dim in subset[parameter].dims[-2:]:
